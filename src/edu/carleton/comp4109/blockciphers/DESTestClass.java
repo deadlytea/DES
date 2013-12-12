@@ -13,7 +13,6 @@ public class DESTestClass {
 		System.out.println(Long.toBinaryString(DES.hash("snapdragon")));
 		
 		des.buildKeySchedule(DES.hash("snapdragon"));
-		des.encrypt("joe", "plaintext");
 
 	}
 
