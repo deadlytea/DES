@@ -90,7 +90,7 @@ public class DES {
 		return h;
 	}
 	
-	private void buildKeySchedule(long key) {
+	public void buildKeySchedule(long key) {
 		
 		// Convert long value to 64bit binary string
 		String binKey = Long.toBinaryString(key);
@@ -104,7 +104,7 @@ public class DES {
 		
 		// Apply Permuted Choice 1 (64 -> 56 bit)
 		for (int i = 0; i < PC1.length; i++)
-			binKey_PC1 = binKey_PC1 + binKey.charAt(PC1[i]);
+			binKey_PC1 = binKey_PC1 + binKey.charAt(PC1[i]-1);
 		
 		String sL, sR;
 		int iL, iR;
@@ -117,7 +117,7 @@ public class DES {
 		iL = Integer.parseInt(sL, 2);
 		iR = Integer.parseInt(sR, 2);
 		
-		// Build the keys
+		// Build the keys (Start at index 1)
 		for (int i = 1; i < K.length; i++) {
 			
 			// Perform left shifts according to key shift array
@@ -139,7 +139,7 @@ public class DES {
 			
 			// Apply Permuted Choice 2 (56 -> 48 bit)
 			for (int j = 0; j < PC2.length; j++)
-				binKey_PC2 = binKey_PC2 + sMerged.charAt(PC2[j]);
+				binKey_PC2 = binKey_PC2 + sMerged.charAt(PC2[j]-1);
 			
 			// Set the 48-bit key
 			K[i] = Long.parseLong(binKey_PC2, 2);
