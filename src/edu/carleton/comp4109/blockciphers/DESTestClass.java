@@ -7,22 +7,21 @@ public class DESTestClass {
 		
 		DES des = new DES();
 		
-		des.buildKeySchedule(DES.hash("snapdragon"));
-		try {
-			System.out.println(des.encryptBlock("0000000000000000000000000000000000000000000000000000000000000000"));
-			System.out.println(des.encryptBlock("0100001011110110110010100100100101110001111111011101101000001100"));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		String key = "secretkey";
+		String cipher = des.encrypt(key, "This is a secret message being encrypted by DES and isn't it awesome that it finally works?");
 		
-		des.testKeySchedule("1001100110100010101110111100110011011101111001101111111110001");
 		
-		String cipher = des.encrypt("Jimmy", "abcdefghijklmnopqrstuvwxyzABCDEFG1234567890,./;");
-		String plain = des.encrypt("Jimmy", cipher);
-		
+		System.out.println("Encrypting message with key: 'secretkey'\nMessage:\n" + 
+				"This is a secret message being encrypted by DES and isn't it awesome that it finally works?\nCiphertext (Hex):");
 		System.out.println(cipher);
+		System.out.println("Decrypting ciphertext with key: 'secretkey'\nDecrypted Plaintext:");
+		String plain = des.decrypt(key, cipher);
 		System.out.println(plain);
+		
+		System.out.println("\nTriple DES: \nplaintext: WHOO TRIPLE DES!!\nkeys:\nchimichanga, raptor, snapdragon\nciphertext:\n");
+		System.out.println(des.encrypt("snapdragon", des.decrypt("raptor", des.encrypt("chimichanga", "WHOO TRIPLE DES!!"))));
+		System.out.println("Decryption:");
+		System.out.println(des.decrypt("chimichanga", des.encrypt("raptor", des.decrypt("snapdragon", "WHOO TRIPLE DES!!"))));
 
 	}
 

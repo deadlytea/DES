@@ -160,27 +160,12 @@ public class DES {
 	 * @param plaintext
 	 * @return
 	 */
-	public String encrypt(String key, String plaintext) throws Exception {
+	public String encrypt(String key, String plaintext) {
 		
 		// Build the key schedule
 		buildKeySchedule(hash(key));
-
-		/*
-		// Convert string message to binary string
-		String binPlaintext = "", binChar;
-		for (int i = 0; i < cPlaintext.length; i++) {
-			binChar = Integer.toBinaryString((int)cPlaintext[i]);
-			
-			// Make sure binary character strings are 16-bit
-			while (binChar.length() < 16)
-				binChar = "0" + binChar;
-			
-			binPlaintext = binPlaintext + binChar;
-			System.out.println(binPlaintext);
-			
-		}
-		*/
 		
+		// Convert to binary
 		byte[] bytes = null;
 		try {
 			bytes = plaintext.getBytes("utf-8");
@@ -199,20 +184,6 @@ public class DES {
 		     }
 		     //System.out.println(binPlaintext);
 		}
-		
-		/* This is the converting back to string
-		byte[] resultbytes = new byte[binary.length()/8];
-		String result = null;
-		for(int j=0; j < resultbytes.length; j++){
-	        String temp = binary.substring(0, 8);
-	        byte b = (byte) Integer.parseInt(temp, 2);
-	        resultbytes[j] = b;
-	        binary = binary.substring(8);
-	    }
-	    */
-		
-		
-		
 		
 		// Add padding if necessary
 		int remainder = binPlaintext.length() % 64;
@@ -245,11 +216,67 @@ public class DES {
 		for (int i = 0; i < binCiphertextBlocks.length; i++) 
 			binCiphertext += binCiphertextBlocks[i];
 			
-		/*	
+		// Destroy key schedule
+		for (int i=0;i<K.length;i++)
+			K[i] = 0;
+		
+		BigInteger b = new BigInteger(binCiphertext, 2);
+		String ciphertext = b.toString(16);
+		
+		return ciphertext;
+	}
+	
+	/**
+	 * Decrypt a string message with the DES block cipher 
+	 * @param key
+	 * @param plaintext
+	 * @return
+	 */
+	public String decrypt(String key, String plaintext) {
+		
+		// Build the key schedule
+		buildKeySchedule(hash(key));
+		
+		// Convert hex string to binary string
+		BigInteger bigPlaintext = new BigInteger(plaintext, 16);
+	    String binPlaintext = bigPlaintext.toString(2);
+	    
+		// Add padding if necessary
+		int remainder = binPlaintext.length() % 64;
+		if (remainder != 0) {
+			for (int i = 0; i < (64 - remainder); i++)
+				binPlaintext = "0" + binPlaintext;
+		}
+		
+		// Separate binary plaintext into blocks
+		String[] binPlaintextBlocks = new String[binPlaintext.length()/64];
+		int offset = 0;
+		for (int i = 0; i < binPlaintextBlocks.length; i++) {
+			binPlaintextBlocks[i] = binPlaintext.substring(offset, offset+64);
+			offset += 64;
+		}
+		
+		String[] binCiphertextBlocks = new String[binPlaintext.length()/64];
+		
+		// Encrypt the blocks
+		for (int i = 0; i < binCiphertextBlocks.length; i++) {
+			try {
+				binCiphertextBlocks[i] = decryptBlock(binPlaintextBlocks[i]);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		// Build the ciphertext binary string from the blocks
+		String binCiphertext = "";
+		for (int i = 0; i < binCiphertextBlocks.length; i++) 
+			binCiphertext += binCiphertextBlocks[i];
+		
 		// Convert back to String for test
 		byte[] ciphertextBytes = new byte[binCiphertext.length()/8];
 		String ciphertext = null;
-		for(int j=0; j < ciphertextBytes.length; j++){
+		for(int j = 0; j < ciphertextBytes.length; j++) {
 	        String temp = binCiphertext.substring(0, 8);
 	        byte b = (byte) Integer.parseInt(temp, 2);
 	        ciphertextBytes[j] = b;
@@ -262,16 +289,12 @@ public class DES {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		//System.out.println(ciphertext);
-		*/
+			
 		// Destroy key schedule
 		for (int i=0;i<K.length;i++)
 			K[i] = 0;
 		
-		BigInteger b = new BigInteger(binCiphertext, 2);
-		String ciphertext = b.toString(16);
-		
-		return ciphertext;
+		return ciphertext.trim();
 	}
 	
 	/**
@@ -292,6 +315,100 @@ public class DES {
 	}
 	
 	public String encryptBlock(String plaintextBlock) throws Exception {
+		int length = plaintextBlock.length();
+		if (length != 64)
+			throw new RuntimeException("Input block length is not 64 bits!");
+		
+		//Initial permutation
+		String out = "";
+		for (int i = 0; i < IP.length; i++) {
+			out = out + plaintextBlock.charAt(IP[i] - 1);	
+		}
+			
+		String mL = out.substring(0, 32);
+		String mR = out.substring(32);
+	
+		for (int i = 0; i < 16; i++) {
+			
+			// 48-bit current key
+			String curKey = Long.toBinaryString(K[i+1]);
+			while(curKey.length() < 48)
+				curKey = "0" + curKey;
+			
+			// Get 32-bit result from f with m1 and ki
+			String fResult = f(mR, curKey);
+			
+			// XOR m0 and f
+			long f = Long.parseLong(fResult, 2);
+			long cmL = Long.parseLong(mL, 2);
+			
+			long m2 = cmL ^ f;
+			String m2String = Long.toBinaryString(m2);
+			
+			while(m2String.length() < 32)
+				m2String = "0" + m2String;
+			
+			mL = mR;
+			mR = m2String;	
+		}
+		
+		String in = mR + mL;
+		String output = "";
+		for (int i = 0; i < IPi.length; i++) {
+			output = output + in.charAt(IPi[i] - 1);
+		}
+		
+		return output;
+	}
+	
+	public String decryptBlock(String plaintextBlock) throws RuntimeException {
+		int length = plaintextBlock.length();
+		if (length != 64)
+			throw new RuntimeException("Input block length is not 64 bits!");
+		
+		//Initial permutation
+		String out = "";
+		for (int i = 0; i < IP.length; i++) {
+			out = out + plaintextBlock.charAt(IP[i] - 1);	
+		}
+			
+		String mL = out.substring(0, 32);
+		String mR = out.substring(32);
+	
+		for (int i = 16; i > 0; i--) {
+			
+			// 48-bit current key
+			String curKey = Long.toBinaryString(K[i]);
+			while(curKey.length() < 48)
+				curKey = "0" + curKey;
+			
+			// Get 32-bit result from f with m1 and ki
+			String fResult = f(mR, curKey);
+			
+			// XOR m0 and f
+			long f = Long.parseLong(fResult, 2);
+			long cmL = Long.parseLong(mL, 2);
+			
+			long m2 = cmL ^ f;
+			String m2String = Long.toBinaryString(m2);
+			
+			while(m2String.length() < 32)
+				m2String = "0" + m2String;
+			
+			mL = mR;
+			mR = m2String;	
+		}
+		
+		String in = mR + mL;
+		String output = "";
+		for (int i = 0; i < IPi.length; i++) {
+			output = output + in.charAt(IPi[i] - 1);
+		}
+		
+		return output;
+	}
+
+	public String testEncryptBlock(String plaintextBlock) throws Exception {
 		int length = plaintextBlock.length();
 		if (length != 64)
 			throw new RuntimeException("Input block length is not 64 bits!");
@@ -351,7 +468,6 @@ public class DES {
 		
 		return output;
 	}
-	
 	/**
 	 * Hash Function from user <b>sfussenegger</b> on stackoverflow 
 	 * 
@@ -429,12 +545,16 @@ public class DES {
 	
 	public void testKeySchedule(String binKey) {
 		
+		System.out.println("Active key:\n" + binKey);
+		
 		// For the 56-bit permuted key 
 		String binKey_PC1 = "";
 		
 		// Apply Permuted Choice 1 (64 -> 56 bit)
 		for (int i = 0; i < PC1.length; i++)
 			binKey_PC1 = binKey_PC1 + binKey.charAt(PC1[i]-1);
+		
+		System.out.println("Active key after PC1:\n" + binKey_PC1);
 		
 		String sL, sR;
 		int iL, iR;
@@ -451,18 +571,30 @@ public class DES {
 		for (int i = 1; i < K.length; i++) {
 			
 			// Perform left shifts according to key shift array
-			iL = Integer.rotateLeft(iL, KEY_SHIFTS[i]);
-			iR = Integer.rotateLeft(iR, KEY_SHIFTS[i]);
+			//iL = Integer.rotateLeft(iL, KEY_SHIFTS[i]);
+			iL = ((iL << KEY_SHIFTS[i]) & 0x0FFFFFFF) | (iL >> (28 - KEY_SHIFTS[i]));
+			//iR = Integer.rotateLeft(iR, KEY_SHIFTS[i]);
+			iR = ((iR << KEY_SHIFTS[i]) & 0x0FFFFFFF) | (iR >> (28 - KEY_SHIFTS[i]));
 			
 			// Merge the two halves
-			long merged = ((long)iL << 28) + iR;
+			//long merged = ((long)iL << 28) + iR;
+			
+			sL = Integer.toBinaryString(iL);
+			while (sL.length() < 28)
+				sL = "0" + sL;
+			
+			sR = Integer.toBinaryString(iR);
+			while (sR.length() < 28)
+				sR = "0" + sR;
 			
 			// 56-bit merged
-			String sMerged = Long.toBinaryString(merged);
+			String sMerged = sL + sR; // Long.toBinaryString(merged);
 			
 			// Fix length if leading zeros absent
 			while (sMerged.length() < 56)
 				sMerged = "0" + sMerged;
+			
+			System.out.println("Subkey #" + i + " after shifts:\n" + sMerged);
 			
 			// For the 56-bit permuted key 
 			String binKey_PC2 = "";
@@ -470,6 +602,8 @@ public class DES {
 			// Apply Permuted Choice 2 (56 -> 48 bit)
 			for (int j = 0; j < PC2.length; j++)
 				binKey_PC2 = binKey_PC2 + sMerged.charAt(PC2[j]-1);
+			
+			System.out.println("Subkey #" + i + " after PC2:\n" + binKey_PC2);
 			
 			// Set the 48-bit key
 			K[i] = Long.parseLong(binKey_PC2, 2);
