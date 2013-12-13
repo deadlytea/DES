@@ -160,7 +160,7 @@ public class DES {
 	 * @param plaintext
 	 * @return
 	 */
-	public String encrypt(String key, String plaintext) {
+	public String encrypt(String key, String plaintext) throws Exception {
 		
 		// Build the key schedule
 		buildKeySchedule(hash(key));
@@ -456,8 +456,8 @@ public class DES {
 			String cur = sin[i];
 		
 			// Get binary values
-			int row = Integer.parseInt(cur.substring(0, 2), 2); 
-			int col = Integer.parseInt(cur.substring(2, 6), 2);
+			int row = Integer.parseInt(cur.charAt(0) + "" + cur.charAt(5), 2); 
+			int col = Integer.parseInt(cur.substring(1, 5), 2);
 			
 			// Do S-Box table lookup
 			sout[i] = Integer.toBinaryString(curS[row][col]);
