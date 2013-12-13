@@ -1,5 +1,6 @@
 package edu.carleton.comp4109.blockciphers;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 
 public class DES {
@@ -140,22 +141,116 @@ public class DES {
 		
 		// Build the key schedule
 		buildKeySchedule(hash(key));
+
+		/*
+		// Convert string message to binary string
+		String binPlaintext = "", binChar;
+		for (int i = 0; i < cPlaintext.length; i++) {
+			binChar = Integer.toBinaryString((int)cPlaintext[i]);
+			
+			// Make sure binary character strings are 16-bit
+			while (binChar.length() < 16)
+				binChar = "0" + binChar;
+			
+			binPlaintext = binPlaintext + binChar;
+			System.out.println(binPlaintext);
+			
+		}
+		*/
+		
+		byte[] bytes = null;
+		try {
+			bytes = plaintext.getBytes("utf-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String binPlaintext = "";
+		for (int i = 0; i < bytes.length; i++) {
+		     int value = bytes[i];
+		     for (int j = 0; j < 8; j++)
+		     {
+		        binPlaintext += ((value & 128) == 0 ? 0 : 1);
+		        value <<= 1;
+		     }
+		     //System.out.println(binPlaintext);
+		}
+		
+		/* This is the converting back to string
+		byte[] resultbytes = new byte[binary.length()/8];
+		String result = null;
+		for(int j=0; j < resultbytes.length; j++){
+	        String temp = binary.substring(0, 8);
+	        byte b = (byte) Integer.parseInt(temp, 2);
+	        resultbytes[j] = b;
+	        binary = binary.substring(8);
+	    }
+	    */
 		
 		
 		
-		return "";
+		
+		// Add padding if necessary
+		int remainder = binPlaintext.length() % 64;
+		if (remainder != 0) {
+			for (int i = 0; i < (64 - remainder); i++)
+				binPlaintext = "0" + binPlaintext;
+		}
+		
+		// Separate binary plaintext into blocks
+		String[] binPlaintextBlocks = new String[binPlaintext.length()/64];
+		int offset = 0;
+		for (int i = 0; i < binPlaintextBlocks.length; i++) {
+			binPlaintextBlocks[i] = binPlaintext.substring(offset, offset+64);
+			offset += 64;
+		}
+		
+		String[] binCiphertextBlocks = new String[binPlaintext.length()/64];
+		
+		// Encrypt the blocks
+		for (int i = 0; i < binCiphertextBlocks.length; i++) 
+			binCiphertextBlocks[i] = encryptBlock(binPlaintextBlocks[i]);
+		
+		// Build the ciphertext binary string from the blocks
+		String binCiphertext = "";
+		for (int i = 0; i < binCiphertextBlocks.length; i++) 
+			binCiphertext += binCiphertextBlocks[i];
+			
+			
+		// Convert back to String for test
+		byte[] ciphertextBytes = new byte[binCiphertext.length()/8];
+		String ciphertext = null;
+		for(int j=0; j < ciphertextBytes.length; j++){
+	        String temp = binCiphertext.substring(0, 8);
+	        byte b = (byte) Integer.parseInt(temp, 2);
+	        ciphertextBytes[j] = b;
+	        binCiphertext = binCiphertext.substring(8);
+	    }
+		
+		try {
+			ciphertext = new String(ciphertextBytes, "utf-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//System.out.println(ciphertext);
+		
+		return ciphertext;
 	}
 	
 	/**
-	 * Encrypt a string of numbers
-	 * @param key
-	 * @param plaintext
-	 * @return
+	 * Encrypt a string of data, can also be used to decrypt ciphertext with the same key used to encrypt
+	 * @param key : String - Key to encrypt the data with
+	 * @param plaintext : String - a string of data
+	 * @param radix : int - the radix of the supplied plaintext data
+	 * @return the encrypted ciphertext; returns the empty string if plaintext data is in wrong format
 	 */
 	public String encrypt(String key, String plaintext, int radix) {
 		
 		// Build the key schedule
 		buildKeySchedule(hash(key));
+		
 		
 		
 		return null;
