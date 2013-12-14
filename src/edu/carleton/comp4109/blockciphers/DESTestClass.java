@@ -18,7 +18,7 @@ public class DESTestClass {
 		String plain = des.decrypt(key, cipher);
 		System.out.println(plain);
 		
-		System.out.println("\nTriple DES: \nplaintext: WHOO TRIPLE DES!!\nkeys:\nchimichanga, raptor, snapdragon\nciphertext:\n");
+		System.out.println("\nTriple DES: \nplaintext: WHOO TRIPLE DES!!\nkeys:\nchimichanga, raptor, snapdragon\nciphertext:");
 		System.out.println(des.encrypt("snapdragon", des.decrypt("raptor", des.encrypt("chimichanga", "WHOO TRIPLE DES!!"))));
 		System.out.println("Decryption:");
 		System.out.println(des.decrypt("chimichanga", des.encrypt("raptor", des.decrypt("snapdragon", "WHOO TRIPLE DES!!"))));

@@ -154,6 +154,67 @@ public class DES {
 		
 	}
 	
+	private static String binToHex(String bin) {
+		
+		BigInteger b = new BigInteger(bin, 2);
+		String ciphertext = b.toString(16);
+		
+		return ciphertext;
+	}
+	
+	private static String hexToBin(String hex) {
+		
+		BigInteger b = new BigInteger(hex, 16);
+		String bin = b.toString(2);
+		
+		return bin;
+	}
+	
+	private static String binToUTF(String bin) {
+		
+		// Convert back to String
+		byte[] ciphertextBytes = new byte[bin.length()/8];
+		String ciphertext = null;
+		for(int j = 0; j < ciphertextBytes.length; j++) {
+	        String temp = bin.substring(0, 8);
+	        byte b = (byte) Integer.parseInt(temp, 2);
+	        ciphertextBytes[j] = b;
+	        bin = bin.substring(8);
+	    }
+		
+		try {
+			ciphertext = new String(ciphertextBytes, "utf-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return ciphertext.trim();
+	}
+	
+	private static String utfToBin(String utf) {
+		
+		// Convert to binary
+		byte[] bytes = null;
+		try {
+			bytes = utf.getBytes("utf-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String bin = "";
+		for (int i = 0; i < bytes.length; i++) {
+		     int value = bytes[i];
+		     for (int j = 0; j < 8; j++)
+		     {
+		        bin += ((value & 128) == 0 ? 0 : 1);
+		        value <<= 1;
+		     }
+		}
+		return bin;
+	}
+	
 	/**
 	 * Encrypt a string message with the DES block cipher 
 	 * @param key
@@ -165,25 +226,7 @@ public class DES {
 		// Build the key schedule
 		buildKeySchedule(hash(key));
 		
-		// Convert to binary
-		byte[] bytes = null;
-		try {
-			bytes = plaintext.getBytes("utf-8");
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		String binPlaintext = "";
-		for (int i = 0; i < bytes.length; i++) {
-		     int value = bytes[i];
-		     for (int j = 0; j < 8; j++)
-		     {
-		        binPlaintext += ((value & 128) == 0 ? 0 : 1);
-		        value <<= 1;
-		     }
-		     //System.out.println(binPlaintext);
-		}
+		String binPlaintext = plaintext;
 		
 		// Add padding if necessary
 		int remainder = binPlaintext.length() % 64;
@@ -220,27 +263,25 @@ public class DES {
 		for (int i=0;i<K.length;i++)
 			K[i] = 0;
 		
-		BigInteger b = new BigInteger(binCiphertext, 2);
-		String ciphertext = b.toString(16);
 		
-		return ciphertext;
+		return binCiphertext;
 	}
 	
 	/**
 	 * Decrypt a string message with the DES block cipher 
-	 * @param key
-	 * @param plaintext
-	 * @return
+	 * @param key : String - the key to decrypt with
+	 * @param plaintext : String - Hex string to decrypt
+	 * @return Plaintext message string
 	 */
 	public String decrypt(String key, String plaintext) {
 		
 		// Build the key schedule
 		buildKeySchedule(hash(key));
 		
-		// Convert hex string to binary string
-		BigInteger bigPlaintext = new BigInteger(plaintext, 16);
-	    String binPlaintext = bigPlaintext.toString(2);
-	    
+		String binPlaintext = null;
+		
+		binPlaintext = plaintext;
+		
 		// Add padding if necessary
 		int remainder = binPlaintext.length() % 64;
 		if (remainder != 0) {
@@ -272,46 +313,12 @@ public class DES {
 		String binCiphertext = "";
 		for (int i = 0; i < binCiphertextBlocks.length; i++) 
 			binCiphertext += binCiphertextBlocks[i];
-		
-		// Convert back to String for test
-		byte[] ciphertextBytes = new byte[binCiphertext.length()/8];
-		String ciphertext = null;
-		for(int j = 0; j < ciphertextBytes.length; j++) {
-	        String temp = binCiphertext.substring(0, 8);
-	        byte b = (byte) Integer.parseInt(temp, 2);
-	        ciphertextBytes[j] = b;
-	        binCiphertext = binCiphertext.substring(8);
-	    }
-		
-		try {
-			ciphertext = new String(ciphertextBytes, "utf-8");
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 			
 		// Destroy key schedule
 		for (int i=0;i<K.length;i++)
 			K[i] = 0;
 		
-		return ciphertext.trim();
-	}
-	
-	/**
-	 * Encrypt a string of data, can also be used to decrypt ciphertext with the same key used to encrypt
-	 * @param key : String - Key to encrypt the data with
-	 * @param plaintext : String - a string of data
-	 * @param radix : int - the radix of the supplied plaintext data
-	 * @return the encrypted ciphertext; returns the empty string if plaintext data is in wrong format
-	 */
-	public String encrypt(String key, String plaintext, int radix) {
-		
-		// Build the key schedule
-		buildKeySchedule(hash(key));
-		
-		
-		
-		return null;
+		return binCiphertext;
 	}
 	
 	public String encryptBlock(String plaintextBlock) throws Exception {
@@ -408,66 +415,6 @@ public class DES {
 		return output;
 	}
 
-	public String testEncryptBlock(String plaintextBlock) throws Exception {
-		int length = plaintextBlock.length();
-		if (length != 64)
-			throw new RuntimeException("Input block length is not 64 bits!");
-		
-		//Initial permutation
-		String out = "";
-		for (int i = 0; i < IP.length; i++) {
-			out = out + plaintextBlock.charAt(IP[i] - 1);	
-		}
-			
-		String mL = out.substring(0, 32);
-		String mR = out.substring(32);
-	
-		for (int i = 0; i < 16; i++) {
-			
-			// 48-bit current key
-			String curKey = Long.toBinaryString(K[i+1]);
-			while(curKey.length() < 48)
-				curKey = "0" + curKey;
-			
-			// Get 32-bit result from f with m1 and ki
-			String fResult = f(mR, curKey);
-			
-			// XOR m0 and f
-			long f = Long.parseLong(fResult, 2);
-			long cmL = Long.parseLong(mL, 2);
-			
-			long m2 = cmL ^ f;
-			String m2String = Long.toBinaryString(m2);
-			
-			while(m2String.length() < 32)
-				m2String = "0" + m2String;
-			
-			mL = mR;
-			mR = m2String;	
-		}
-		
-		/*
-		String m15 = m0;
-		String m16 = m1;
-		
-		String curKey = Long.toBinaryString(K[16]);
-		String fResult = f(m16, curKey);
-		
-		long f = Long.parseLong(fResult, 2);
-		long cm15 = Long.parseLong(m15, 2);
-		
-		long lm17 = cm15 ^ f;
-		String m17 = Long.toBinaryString(lm17);
-		*/
-		
-		String in = mR + mL;
-		String output = "";
-		for (int i = 0; i < IPi.length; i++) {
-			output = output + in.charAt(IPi[i] - 1);
-		}
-		
-		return output;
-	}
 	/**
 	 * Hash Function from user <b>sfussenegger</b> on stackoverflow 
 	 * 
@@ -543,82 +490,16 @@ public class DES {
 		}
 	}
 	
-	public void testKeySchedule(String binKey) {
-		
-		System.out.println("Active key:\n" + binKey);
-		
-		// For the 56-bit permuted key 
-		String binKey_PC1 = "";
-		
-		// Apply Permuted Choice 1 (64 -> 56 bit)
-		for (int i = 0; i < PC1.length; i++)
-			binKey_PC1 = binKey_PC1 + binKey.charAt(PC1[i]-1);
-		
-		System.out.println("Active key after PC1:\n" + binKey_PC1);
-		
-		String sL, sR;
-		int iL, iR;
-		
-		// Split permuted string in half | 56/2 = 28
-		sL = binKey_PC1.substring(0, 28);
-		sR = binKey_PC1.substring(28);
-		
-		// Parse binary strings into integers for shifting
-		iL = Integer.parseInt(sL, 2);
-		iR = Integer.parseInt(sR, 2);
-		
-		// Build the keys (Start at index 1)
-		for (int i = 1; i < K.length; i++) {
-			
-			// Perform left shifts according to key shift array
-			//iL = Integer.rotateLeft(iL, KEY_SHIFTS[i]);
-			iL = ((iL << KEY_SHIFTS[i]) & 0x0FFFFFFF) | (iL >> (28 - KEY_SHIFTS[i]));
-			//iR = Integer.rotateLeft(iR, KEY_SHIFTS[i]);
-			iR = ((iR << KEY_SHIFTS[i]) & 0x0FFFFFFF) | (iR >> (28 - KEY_SHIFTS[i]));
-			
-			// Merge the two halves
-			//long merged = ((long)iL << 28) + iR;
-			
-			sL = Integer.toBinaryString(iL);
-			while (sL.length() < 28)
-				sL = "0" + sL;
-			
-			sR = Integer.toBinaryString(iR);
-			while (sR.length() < 28)
-				sR = "0" + sR;
-			
-			// 56-bit merged
-			String sMerged = sL + sR; // Long.toBinaryString(merged);
-			
-			// Fix length if leading zeros absent
-			while (sMerged.length() < 56)
-				sMerged = "0" + sMerged;
-			
-			System.out.println("Subkey #" + i + " after shifts:\n" + sMerged);
-			
-			// For the 56-bit permuted key 
-			String binKey_PC2 = "";
-			
-			// Apply Permuted Choice 2 (56 -> 48 bit)
-			for (int j = 0; j < PC2.length; j++)
-				binKey_PC2 = binKey_PC2 + sMerged.charAt(PC2[j]-1);
-			
-			System.out.println("Subkey #" + i + " after PC2:\n" + binKey_PC2);
-			
-			// Set the 48-bit key
-			K[i] = Long.parseLong(binKey_PC2, 2);
-		}
-	}
 	
 	/**
-	 * Function f in DES algorithm specified in FIPS Pub 46
+	 * Feistel function in DES algorithm specified in FIPS Pub 46
 	 * @param mi : String - 32-bit message binary string
 	 * @param key : String - 48-bit key binary string
 	 * @return 32-bit output string
 	 */
 	public static String f(String mi, String key) {
 		
-		// Expansion function g
+		// Expansion function g (named E in fips pub 46)
 		String gMi = "";
 		for (int i = 0; i < g.length; i++) {
 			gMi = gMi + mi.charAt(g[i] - 1);
@@ -676,6 +557,78 @@ public class DES {
 		}
 		
 		return mergedP;
+	}
+	
+	public static void main(String[] args) {
+		
+		DES des = new DES();
+		
+		boolean enc = true;
+		String key1 = null, key2 = null, key3 = null, message = null, result = null;
+		
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].equals("-k1"))
+				key1 = args[++i];
+			else if (args[i].equals("-k2"))
+				key2 = args[++i];
+			else if (args[i].equals("-k3"))
+				key3 = args[++i];
+			else if (args[i].equals("-m"))
+				message = args[++i];
+			else if (args[i].equals("-d"))
+				enc = false;
+		}
+		
+		if (enc) {
+			if (message == null) {
+				System.out.println("No message given to encrypt. Exiting..");
+				System.exit(0);
+			} else if (key1 == null) {
+				System.out.println("Improper use of key arguments. Exiting..");
+				System.exit(0);
+			}
+			
+			if (key2 == null) {
+				if (key3 != null) {
+					System.out.println("Improper use of key arguments. Exiting..");
+					System.exit(0);
+				}
+				result = des.encrypt(key1, utfToBin(message));
+				System.out.println(binToHex(result));
+			} else {
+				if (key3 == null) {
+					System.out.println("Improper use of key arguments. Exiting..");
+					System.exit(0);
+				}
+				result = des.encrypt(key3, des.decrypt(key2, des.encrypt(key1, utfToBin(message))));
+				System.out.println(binToHex(result));
+			}
+		} else {
+			if (message == null) {
+				System.out.println("No data given to decrypt. Exiting..");
+				System.exit(0);
+			} else if (key1 == null) {
+				System.out.println("Improper use of key arguments. Exiting..");
+				System.exit(0);
+			}
+			
+			if (key2 == null) {
+				if (key3 != null) {
+					System.out.println("Improper use of key arguments. Exiting..");
+					System.exit(0);
+				}
+				result = des.decrypt(key1, hexToBin(message));
+				System.out.println(binToUTF(result));
+			} else {
+				if (key3 == null) {
+					System.out.println("Improper use of key arguments. Exiting..");
+					System.exit(0);
+				}
+				result = des.decrypt(key1, des.encrypt(key2, des.decrypt(key3, hexToBin(message))));
+				System.out.println(binToUTF(result));
+			}
+		}
+		
 	}
 
 }
