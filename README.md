@@ -5,9 +5,9 @@ Java implementation of DES for university cryptography course, only ECB mode is 
 
 Mostly used BigInteger class and String Manipulation to do bit operations
 
-DES is the [Data Encryption Standard]("http://en.wikipedia.org/wiki/Data_Encryption_Standard"), predecessor of the AES block cipher widely used today
+DES is the [Data Encryption Standard](http://en.wikipedia.org/wiki/Data_Encryption_Standard), predecessor of the AES block cipher widely used today
 
-It is 64-bit and as specified in [FIPS Pub 46]("http://csrc.nist.gov/publications/fips/fips46-3/fips46-3.pdf")
+It is 64-bit and as specified in [FIPS Pub 46](http://csrc.nist.gov/publications/fips/fips46-3/fips46-3.pdf)
 
 To Run
 ------
@@ -33,7 +33,7 @@ To Decrypt simply add the ```-d``` option
 
 eg. ```javaw DES.jar -d -k1 <key> -m <message_to_decrypt>```
 
-To use [TripleDES]("http://en.wikipedia.org/wiki/Triple_DES") encryption provide three keys like so:
+To use [TripleDES](http://en.wikipedia.org/wiki/Triple_DES) encryption provide three keys like so:
 
 ```javaw DES.jar -k1 <key1> -k2 <key2> -k3 <key3> -m <message_to_encrypt>```
 
